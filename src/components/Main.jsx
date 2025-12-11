@@ -211,7 +211,7 @@ export default function Main() {
                 <a href="https://www.instagram.com/_gaurav.khakse_/" target="_blank">
                   Stalk my insta?
                 </a>
-                <a onClick={() => setModalOpen(true)}>Buy me a coffee ☕️</a>
+                <a style={{cursor: "pointer"}} onClick={() => setModalOpen(true)}>Buy me a coffee ☕️</a>
               </div>
             )}
           </div>
@@ -227,7 +227,7 @@ export default function Main() {
                 ref={inputRef}
                 className="main-input"
                 // type="text"
-                placeholder="Search for Courses by Name"
+                placeholder="Search for courses by name or university name ..."
                 value={query}
                 onChange={(e) => {
                   setQuery(e.target.value);

@@ -123,7 +123,7 @@ export default function Personalization() {
                 >
                   Stalk my insta?
                 </a>
-                <a onClick={openModal}>Buy me a coffee ☕️</a>
+                <a style={{cursor: "pointer"}}onClick={openModal}>Buy me a coffee ☕️</a>
               </div>
             )}
           </div>
@@ -289,10 +289,6 @@ export default function Personalization() {
                 <br />
                 If my work helped you in any way or brought a smile to your face,
                 consider buying me a coffee! ☕<br />
-                <br />
-                Every small contribution fuels my passion for coding and keeps me
-                motivated to create more awesome stuff!{" "}
-                <span className="heart">❤️</span>
               </div>
 
               <div className="upi-section">

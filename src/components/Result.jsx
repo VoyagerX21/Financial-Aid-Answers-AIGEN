@@ -138,7 +138,7 @@ export default function FinanceAid() {
               >
                 Stalk my insta?
               </a>
-              <a href="#" onClick={(e) => { e.preventDefault(); setModalOpen(true); }}>
+              <a style={{cursor: "pointer"}} href="#" onClick={(e) => { e.preventDefault(); setModalOpen(true); }}>
                 Buy me a coffee ☕️
               </a>
             </div>
