@@ -10,9 +10,8 @@ Get-EasyAid helps students and professionals apply for financial aid on Coursera
 
 Check out the live version of Get-EasyAid:
 
-🔗 **[Visit Live Site](https://your-live-url-here.com)**
+🔗 **[Visit Live Site](https://get-easy-aid-client.vercel.app/)**
 
-*Replace the URL above with your actual deployment link*
 
 ## ✨ Features
 
@@ -75,14 +74,27 @@ npm run build
 
 ## 📸 Screenshots
 
-<!-- Add your project screenshots here -->
-<!-- Example:
-![Home Page](./screenshots/home.png)
-![Course Search](./screenshots/search.png)
-![Results Page](./screenshots/results.png)
--->
-
-*Screenshots coming soon!*
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="https://ik.imagekit.io/lidyx2zxm/Get-EasyAid/Screenshot%202025-12-11%20231815.png" alt="Home Page" width="100%" />
+      <br />
+      <b>Home Page</b>
+    </td>
+    <td width="50%" align="center">
+      <img src="https://ik.imagekit.io/lidyx2zxm/Get-EasyAid/Screenshot%202025-12-11%20230651.png" alt="Course Search" width="100%" />
+      <br />
+      <b>Course Search</b>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="https://ik.imagekit.io/lidyx2zxm/Get-EasyAid/Screenshot%202025-12-11%20230758.png" alt="Results Page" width="80%" />
+      <br />
+      <b>Results Page</b>
+    </td>
+  </tr>
+</table>
 
 ## 📝 Usage
 
