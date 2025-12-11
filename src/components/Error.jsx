@@ -1,5 +1,4 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import "../styles/error.css";
 
 const ErrorPage = () => {
   const navigate = useNavigate();
@@ -14,14 +13,14 @@ const ErrorPage = () => {
 
   return (
     <main>
-      <div className="container">
+      <div className="error-container">
         <div className="row">
           <div className="col-md-6 align-self-center">
             <h1>{statusCode}</h1>
             <h2>{title}</h2>
             <p style={{ textAlign: "center" }}>{desc}</p>
 
-            <button className="btn green" onClick={() => navigate("/")}>
+            <button className="error-btn green" onClick={() => navigate("/")}>
               {btn}
             </button>
           </div>

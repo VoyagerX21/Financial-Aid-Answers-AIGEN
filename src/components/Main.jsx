@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import localforage from "localforage";
-import "../styles/main.css";
 
 export default function Main() {
   const navigate = useNavigate();
@@ -193,7 +192,7 @@ export default function Main() {
         <div className="header">
           <div
             onClick={() => window.location.reload()}
-            className="logo"
+            className="home-btn"
           >
             Get-EasyAid
           </div>
@@ -259,28 +258,30 @@ export default function Main() {
 
       {/* MODAL */}
       {modalOpen && (
-        <div className="overlay active" onClick={() => setModalOpen(false)}>
+        <div className={`overlay ${modalOpen ? "active" : ""}`} onClick={() => setModalOpen(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <button className="close-btn" onClick={() => setModalOpen(false)}>&times;</button>
             <h2>Buy me a coffee!</h2>
 
-            <div className="message">
-              <strong>Hey there! 👋</strong><br /><br />
-              If my work helped you in any way or brought a smile to your face,
-              consider buying me a coffee ☕
-            </div>
-
-            <div className="upi-section">
-              <div className="upi-label">📱 UPI ID</div>
-              <div className="upi-id" onClick={copyUPI}>
-                khakse2gaurav2003@okaxis
+            <div className="modal-content">
+              <div className="modal-message">
+                <strong>Hey there! 👋</strong><br /><br />
+                If my work helped you in any way or brought a smile to your face,
+                consider buying me a coffee ☕
               </div>
-              <div className="copy-hint">👆 Click to copy UPI ID</div>
-            </div>
 
-            <div className="thank-you">
-              <strong>Thank you so much! 🙏</strong><br />
-              <em>- Gaurav</em>
+              <div className="upi-section">
+                <div className="upi-label">📱 UPI ID</div>
+                <div className="upi-id" onClick={copyUPI}>
+                  khakse2gaurav2003@okaxis
+                </div>
+                <div className="copy-hint">👆 Click to copy UPI ID</div>
+              </div>
+
+              <div className="thank-you">
+                <strong>Thank you so much! 🙏</strong><br />
+                <em>- Gaurav</em>
+              </div>
             </div>
           </div>
         </div>
