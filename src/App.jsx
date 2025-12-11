@@ -3,6 +3,7 @@ import Main from "./components/Main.jsx";
 import Personalization from "./components/DetailForm.jsx";
 import FinanceAid from "./components/Result.jsx";
 import ErrorPage from "./components/Error.jsx";
+import "./App.css";
 
 export default function App(){
   return (
