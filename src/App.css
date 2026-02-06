@@ -55,10 +55,6 @@ a {
   color: inherit;
 }
 
-button {
-  font: inherit;
-}
-
 .surface {
   background: var(--panel);
   border: 1px solid var(--border);
