@@ -64,7 +64,7 @@ export default function Personalization() {
 
     try {
       const res = await fetch(
-        "https://get-easyaid-server.onrender.com/GetPrompt",
+        "https://geteasyserver.khakse.dev/GetPrompt",
         {
           method: "POST",
           headers: {

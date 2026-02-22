@@ -29,7 +29,7 @@ export default function Main() {
     try {
 
       const res = await fetch(
-        `https://get-easyaid-server.onrender.com/search?query=${encodeURIComponent(
+        `https://geteasyserver.khakse.dev/search?query=${encodeURIComponent(
           searchText
         )}`
       );
@@ -113,7 +113,7 @@ export default function Main() {
       setLoadingmsg("Fetching course details...");
 
       const res = await fetch(
-        "https://get-easyaid-server.onrender.com/submit",
+        "https://geteasyserver.khakse.dev/submit",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
