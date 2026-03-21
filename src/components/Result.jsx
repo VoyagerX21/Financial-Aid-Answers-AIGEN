@@ -168,6 +168,7 @@ export default function FinanceAid() {
             text={responses[2]}
             onCopy={copyResponse}
             onRegenerate={generateResponse}
+            showButtons={showButtons}
           />
         </div>
       </div>
@@ -177,7 +178,7 @@ export default function FinanceAid() {
   );
 }
 
-function ResponseBox({ title, boxNumber, text, onCopy, onRegenerate }) {
+function ResponseBox({ title, boxNumber, text, onCopy, onRegenerate, showButtons }) {
   return (
     <div className="result-response-box">
       <h2>{title}</h2>
