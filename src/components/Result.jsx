@@ -5,7 +5,10 @@ export default function FinanceAid() {
   const { state } = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [showButtons, setShowButtons] = useState(false);
+  const [showButtons, setShowButtons] = useState({
+    1: false,
+    2: false
+  });
 
   const [responses, setResponses] = useState({
     1: state.firstRes,
@@ -32,7 +35,7 @@ export default function FinanceAid() {
   };
 
   const typeWriter = (id, text, speed = 50) => {
-    setShowButtons(false);
+    setShowButtons(prev => ({ ...prev, [id]: false }));
     const element = document.getElementById(id);
     element.innerHTML = `<span class="result-typing-cursor"></span>`;
 
@@ -60,7 +63,7 @@ export default function FinanceAid() {
         }, 1000);
       }
     }, speed);
-    setShowButtons(true);
+    setShowButtons(prev => ({ ...prev, [id]: true }));
   };
 
   const copyResponse = (boxNumber) => {
@@ -84,7 +87,7 @@ export default function FinanceAid() {
     responseElement.innerHTML = `<span class="result-typing-cursor"></span>`;
 
     try {
-      const payload = localStorage.getItem("userDetailsPayload");
+      const payload = JSON.parse(localStorage.getItem("userDetailsPayload"));
       const res = await fetch("/regenerate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -160,6 +163,7 @@ export default function FinanceAid() {
             text={responses[1]}
             onCopy={copyResponse}
             onRegenerate={generateResponse}
+            showButtons={showButtons[1]}
           />
 
           <ResponseBox
@@ -168,7 +172,7 @@ export default function FinanceAid() {
             text={responses[2]}
             onCopy={copyResponse}
             onRegenerate={generateResponse}
-            showButtons={showButtons}
+            showButtons={showButtons[2]}
           />
         </div>
       </div>
