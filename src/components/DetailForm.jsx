@@ -61,7 +61,7 @@ export default function Personalization() {
       year,
       position,
     };
-
+    localStorage.setItem("userDetailsPayload", payload);
     try {
       const res = await fetch(
         "https://geteasyserver.khakse.dev/GetPrompt",

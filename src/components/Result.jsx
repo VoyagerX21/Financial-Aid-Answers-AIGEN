@@ -5,6 +5,7 @@ export default function FinanceAid() {
   const { state } = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [showButtons, setShowButtons] = useState(false);
 
   const [responses, setResponses] = useState({
     1: state.firstRes,
@@ -31,6 +32,7 @@ export default function FinanceAid() {
   };
 
   const typeWriter = (id, text, speed = 50) => {
+    setShowButtons(false);
     const element = document.getElementById(id);
     element.innerHTML = `<span class="result-typing-cursor"></span>`;
 
@@ -58,6 +60,7 @@ export default function FinanceAid() {
         }, 1000);
       }
     }, speed);
+    setShowButtons(true);
   };
 
   const copyResponse = (boxNumber) => {
@@ -81,10 +84,11 @@ export default function FinanceAid() {
     responseElement.innerHTML = `<span class="result-typing-cursor"></span>`;
 
     try {
+      const payload = localStorage.getItem("userDetailsPayload");
       const res = await fetch("/regenerate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ boxNumber }),
+        body: JSON.stringify({ payload, boxNumber }),
       });
       const data = await res.json();
 
@@ -189,7 +193,7 @@ function ResponseBox({ title, boxNumber, text, onCopy, onRegenerate }) {
           ⚠️ "AI answers may have flaws, so double-check before you trust!"
         </p>
 
-        <div className="result-buttons-only">
+        {showButtons ? <div className="result-buttons-only">
           <button className="result-copy-btn" onClick={() => onCopy(boxNumber)}>
             Copy
           </button>
@@ -200,7 +204,7 @@ function ResponseBox({ title, boxNumber, text, onCopy, onRegenerate }) {
           >
             Regenerate
           </button>
-        </div>
+        </div>: null}
       </div>
     </div>
   );
