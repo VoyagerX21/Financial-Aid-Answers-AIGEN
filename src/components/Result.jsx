@@ -34,8 +34,8 @@ export default function FinanceAid() {
     }
   };
 
-  const typeWriter = (id, text, speed = 50) => {
-    setShowButtons(prev => ({ ...prev, [id]: false }));
+  const typeWriter = (box, id, text, speed = 50) => {
+    setShowButtons(prev => ({ ...prev, [box]: false }));
     const element = document.getElementById(id);
     element.innerHTML = `<span class="result-typing-cursor"></span>`;
 
@@ -63,7 +63,7 @@ export default function FinanceAid() {
         }, 1000);
       }
     }, speed);
-    setShowButtons(prev => ({ ...prev, [id]: true }));
+    setShowButtons(prev => ({ ...prev, [box]: true }));
   };
 
   const copyResponse = (boxNumber) => {
@@ -101,7 +101,7 @@ export default function FinanceAid() {
       button.classList.remove("result-loading");
       button.textContent = "Regenerate";
 
-      typeWriter(`result-response${boxNumber}`, data.response, 80);
+      typeWriter(boxNumber, `result-response${boxNumber}`, data.response, 80);
     } catch (error) {
       button.disabled = false;
       button.classList.remove("result-loading");
@@ -111,8 +111,8 @@ export default function FinanceAid() {
   };
 
   useEffect(() => {
-    setTimeout(() => typeWriter("result-response1", responses[1]), 200);
-    setTimeout(() => typeWriter("result-response2", responses[2]), 300);
+    setTimeout(() => typeWriter(1, "result-response1", responses[1]), 200);
+    setTimeout(() => typeWriter(2, "result-response2", responses[2]), 300);
   }, []);
 
   return (
