@@ -88,7 +88,7 @@ export default function FinanceAid() {
 
     try {
       const payload = JSON.parse(localStorage.getItem("userDetailsPayload"));
-      const res = await fetch("/regenerate", {
+      const res = await fetch("https://geteasyserver.khakse.dev/regenerate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ payload, boxNumber }),
