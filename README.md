@@ -8,7 +8,7 @@ Get-EasyAid helps students and professionals apply for financial aid on Coursera
 
 ## 🌐 Live Demo
 
-🔗 **[Visit Live Site](https://get-easy-aid-client.vercel.app/)**
+🔗 **[Visit Live Site](https://geteasy.khakse.dev/)**
 
 ## ✨ Features
 
