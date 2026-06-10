@@ -33,7 +33,7 @@ export default function Personalization() {
 
     const intervalId = setInterval(() => {
       setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
-    }, 1800);
+    }, 1200);
 
     return () => clearInterval(intervalId);
   }, [loading]);
@@ -72,6 +72,7 @@ export default function Personalization() {
   // Form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoadingMessageIndex(Math.floor(Math.random() * loadingMessages.length));
     setLoading(true);
 
     const payload = {

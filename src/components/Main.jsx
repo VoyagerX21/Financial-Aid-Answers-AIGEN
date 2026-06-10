@@ -14,7 +14,13 @@ export default function Main() {
   const [showDropdown, setShowDropdown] = useState(false);
 
   const [loading, setLoading] = useState(false);
-  const [loadingmsg, setLoadingmsg] = useState("");
+  const loadingMessages = [
+    "Fetching course details...",
+    "Crunching your selection...",
+    "Preparing your next step...",
+    "Almost there...",
+  ];
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -63,6 +69,19 @@ export default function Main() {
   }, [query]);
 
   useEffect(() => {
+    if (!loading) {
+      setLoadingMessageIndex(0);
+      return undefined;
+    }
+
+    const intervalId = setInterval(() => {
+      setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+    }, 1200);
+
+    return () => clearInterval(intervalId);
+  }, [loading]);
+
+  useEffect(() => {
     const handleKeys = (e) => {
       if (!showDropdown) return;
 
@@ -109,8 +128,8 @@ export default function Main() {
     setShowDropdown(false);
 
     try {
+      setLoadingMessageIndex(Math.floor(Math.random() * loadingMessages.length));
       setLoading(true);
-      setLoadingmsg("Fetching course details...");
 
       const res = await fetch(
         "https://geteasyserver.khakse.dev/submit",
@@ -131,7 +150,6 @@ export default function Main() {
       alert("Network error");
     } finally {
       setLoading(false);
-      setLoadingmsg("");
     }
   };
 
@@ -150,7 +168,9 @@ export default function Main() {
       {loading && (
         <div className="loader-overlay">
           <div className="loader-circle"></div>
-          <p style={{ color: "white", fontWeight: "bold" }}>{loadingmsg}</p>
+          <p style={{ color: "white", fontWeight: "bold" }}>
+            {loadingMessages[loadingMessageIndex]}
+          </p>
         </div>
       )}
 
