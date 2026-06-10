@@ -12,6 +12,7 @@ export default function Main() {
   const [results, setResults] = useState([]);
   const [highlight, setHighlight] = useState(-1);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const loadingMessages = [
@@ -29,6 +30,8 @@ export default function Main() {
   const searchCourses = async (searchText) => {
     if (!searchText.trim()) {
       setResults([]);
+      setHasSearched(false);
+      setShowDropdown(false);
       return;
     }
 
@@ -43,7 +46,8 @@ export default function Main() {
       const data = await res.json();
       // console.log(data);
       if (data.success) {
-        setResults(data.results);
+        setResults(data.results || []);
+        setHasSearched(true);
         setShowDropdown(true);
       }
     } catch (err) {
@@ -243,6 +247,14 @@ export default function Main() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {showDropdown && hasSearched && results.length === 0 && (
+              <div className="dropdown show" ref={dropdownRef}>
+                <div className="dropdown-item dropdown-item-empty" aria-disabled="true">
+                  No results found
+                </div>
               </div>
             )}
           </div>

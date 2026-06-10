@@ -621,6 +621,18 @@ a {
   background: rgba(56, 189, 248, 0.08);
 }
 
+.dropdown-item-empty {
+  cursor: default;
+  justify-content: center;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.dropdown-item-empty:hover,
+.dropdown-item-empty.highlighted {
+  background: transparent;
+}
+
 .item-text {
   font-weight: 700;
 }
