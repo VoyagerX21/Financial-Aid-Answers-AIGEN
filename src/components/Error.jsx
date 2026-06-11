@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const ErrorPage = () => {
@@ -20,7 +21,7 @@ const ErrorPage = () => {
             <h2>{title}</h2>
             <p style={{ textAlign: "center" }}>{desc}</p>
 
-            <button className="error-btn green" onClick={() => navigate("/")}>
+            <button className="error-btn green" onClick={() => navigate("/results", { state: state })}>
               {btn}
             </button>
           </div>

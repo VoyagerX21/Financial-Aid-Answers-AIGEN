@@ -1,18 +1,32 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function FinanceAid() {
   const { state } = useLocation();
+  const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [jobId, setJobId] = useState(state.job_id)
   const [showButtons, setShowButtons] = useState({
     1: false,
     2: false
   });
+  const [loading, setLoading] = useState(false);
+  const loadingMessages = [
+    "Almost there...",
+    "Hang on tight...",
+    "Thinking hard...",
+    "Warming up the AI...",
+    "Polishing your result...",
+    "A few more seconds...",
+    "Finalizing the answer...",
+    "Just a moment longer...",
+  ];
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
   const [responses, setResponses] = useState({
-    1: state.firstRes,
-    2: state.secondRes,
+    1: "",
+    2: "",
   });
 
   const typingIntervals = useRef({});
@@ -20,10 +34,61 @@ export default function FinanceAid() {
   const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
   const closeDropdown = () => setDropdownOpen(false);
 
+  const getresponse = async () => {
+    setLoading(true);
+    const res = await fetch(`https://geteasyserver.khakse.dev/job/${jobId}`);
+    const data = await res.json();
+    return data;
+  }
+
+  useEffect(() => {
+    let intervalId;
+    const fetchResponse = async () => {
+      try {
+        const data = await getresponse();
+        if (data.status === "failed") {
+          clearInterval(intervalId);
+          navigate("/error", { state: data });
+          return;
+        }
+        if (data.status === "running") {
+          return;
+        }
+        clearInterval(intervalId);
+        setResponses({
+          1: data.firstRes,
+          2: data.secondRes,
+        });
+        setLoading(false);
+        setTimeout(() => typeWriter(1, "result-response1", data.firstRes), 200);
+        setTimeout(() => typeWriter(2, "result-response2", data.secondRes), 300);
+      } catch (err) {
+        clearInterval(intervalId);
+        navigate("/error", { state: err });
+      }
+    };
+    fetchResponse();
+    intervalId = setInterval(fetchResponse, 5000);
+    return () => clearInterval(intervalId);
+  }, []);
+
   useEffect(() => {
     document.addEventListener("click", handleOutside);
     return () => document.removeEventListener("click", handleOutside);
   });
+
+  useEffect(() => {
+    if (!loading) {
+      setLoadingMessageIndex(0);
+      return undefined;
+    }
+
+    const intervalId = setInterval(() => {
+      setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+    }, 1200);
+
+    return () => clearInterval(intervalId);
+  }, [loading]);
 
   const handleOutside = (e) => {
     const menuBtn = document.querySelector(".icon-menu");
@@ -87,8 +152,7 @@ export default function FinanceAid() {
     responseElement.innerHTML = `<span class="result-typing-cursor"></span>`;
 
     try {
-      const payload = JSON.parse(localStorage.getItem("userDetailsPayload"));
-      const res = await fetch("https://geteasyserver.khakse.dev/regenerate", {
+      const res = await fetch(`https://geteasyserver.khakse.dev/job/${jobId}/retry/${boxNumber}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ payload, boxNumber }),
@@ -110,75 +174,83 @@ export default function FinanceAid() {
     }
   };
 
-  useEffect(() => {
-    setTimeout(() => typeWriter(1, "result-response1", responses[1]), 200);
-    setTimeout(() => typeWriter(2, "result-response2", responses[2]), 300);
-  }, []);
-
   return (
-    <div className="result-main-content">
-      <div className="header">
-        <div
-          className="home-btn"
-          onClick={() => (window.location.href = "/")}
-        >
-          Home
+    <>
+      {loading && (
+        <div className="loader-overlay">
+          <div className="loader-circle"></div>
+          <p style={{ color: "white", fontWeight: "bold" }}>
+            {loadingMessages[loadingMessageIndex]}
+          </p>
+          <p style={{ color: "white", fontSize: "14px" }}>
+            The AI is taking its time to give you a better answer.
+          </p>
+        </div>
+      )}
+      <div className="result-main-content">
+        <div className="header">
+          <div
+            className="home-btn"
+            onClick={() => (window.location.href = "/")}
+          >
+            Home
+          </div>
+
+          <div className="header-right">
+            <button
+              className="icon-btn icon-menu"
+              onClick={toggleDropdown}
+            ></button>
+
+            {dropdownOpen && (
+              <div className={`dropdown-menu ${dropdownOpen ? "active" : ""}`} id="result-dropdownMenu">
+                <a
+                  href="https://github.com/VoyagerX21/Get-AidEasy"
+                  target="_blank"
+                >
+                  Source Code
+                </a>
+                <a
+                  href="https://www.instagram.com/_gaurav.khakse_/"
+                  target="_blank"
+                >
+                  Stalk my insta?
+                </a>
+                <a style={{ cursor: "pointer" }} href="#" onClick={(e) => { e.preventDefault(); setModalOpen(true); }}>
+                  Buy me a coffee ☕️
+                </a>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="header-right">
-          <button
-            className="icon-btn icon-menu"
-            onClick={toggleDropdown}
-          ></button>
+        <h1 className="result-main-title">AI Financial Aid Responses</h1>
 
-          {dropdownOpen && (
-            <div className={`dropdown-menu ${dropdownOpen ? "active" : ""}`} id="result-dropdownMenu">
-              <a
-                href="https://github.com/VoyagerX21/Get-AidEasy"
-                target="_blank"
-              >
-                Source Code
-              </a>
-              <a
-                href="https://www.instagram.com/_gaurav.khakse_/"
-                target="_blank"
-              >
-                Stalk my insta?
-              </a>
-              <a style={{cursor: "pointer"}} href="#" onClick={(e) => { e.preventDefault(); setModalOpen(true); }}>
-                Buy me a coffee ☕️
-              </a>
-            </div>
-          )}
+        <div className="result-chat-container">
+          <div className="result-container">
+            <ResponseBox
+              title="Why Are You Applying For Financial Aid?"
+              boxNumber={1}
+              text={responses[1]}
+              onCopy={copyResponse}
+              onRegenerate={generateResponse}
+              showButtons={showButtons[1]}
+            />
+
+            <ResponseBox
+              title="How Will Your Selected Course Help With Your Goals?"
+              boxNumber={2}
+              text={responses[2]}
+              onCopy={copyResponse}
+              onRegenerate={generateResponse}
+              showButtons={showButtons[2]}
+            />
+          </div>
         </div>
+
+        {modalOpen && <CoffeeModal onClose={() => setModalOpen(false)} />}
       </div>
-
-      <h1 className="result-main-title">AI Financial Aid Responses</h1>
-
-      <div className="result-chat-container">
-        <div className="result-container">
-          <ResponseBox
-            title="Why Are You Applying For Financial Aid?"
-            boxNumber={1}
-            text={responses[1]}
-            onCopy={copyResponse}
-            onRegenerate={generateResponse}
-            showButtons={showButtons[1]}
-          />
-
-          <ResponseBox
-            title="How Will Your Selected Course Help With Your Goals?"
-            boxNumber={2}
-            text={responses[2]}
-            onCopy={copyResponse}
-            onRegenerate={generateResponse}
-            showButtons={showButtons[2]}
-          />
-        </div>
-      </div>
-
-      {modalOpen && <CoffeeModal onClose={() => setModalOpen(false)} />}
-    </div>
+    </>
   );
 }
 
@@ -209,7 +281,7 @@ function ResponseBox({ title, boxNumber, text, onCopy, onRegenerate, showButtons
           >
             Regenerate
           </button>
-        </div>: null}
+        </div> : null}
       </div>
     </div>
   );

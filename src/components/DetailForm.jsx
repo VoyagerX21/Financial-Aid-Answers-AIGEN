@@ -12,31 +12,6 @@ export default function Personalization() {
   const [showMenu, setShowMenu] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [status, setStatus] = useState("student");
-  const [loading, setLoading] = useState(false);
-  const loadingMessages = [
-    "Almost there...",
-    "Hang on tight...",
-    "Thinking hard...",
-    "Warming up the AI...",
-    "Polishing your result...",
-    "A few more seconds...",
-    "Finalizing the answer...",
-    "Just a moment longer...",
-  ];
-  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
-
-  useEffect(() => {
-    if (!loading) {
-      setLoadingMessageIndex(0);
-      return undefined;
-    }
-
-    const intervalId = setInterval(() => {
-      setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
-    }, 1200);
-
-    return () => clearInterval(intervalId);
-  }, [loading]);
 
   // Form fields
   const [name, setName] = useState("");
@@ -86,7 +61,6 @@ export default function Personalization() {
       year,
       position,
     };
-    localStorage.setItem("userDetailsPayload", JSON.stringify(payload));
     try {
       const res = await fetch(
         "https://geteasyserver.khakse.dev/GetPrompt",
@@ -117,11 +91,8 @@ export default function Personalization() {
       {loading && (
         <div className="loader-overlay">
           <div className="loader-circle"></div>
-          <p style={{ color: "white", fontWeight: "bold" }}>
-            {loadingMessages[loadingMessageIndex]}
-          </p>
           <p style={{ color: "white", fontSize: "14px" }}>
-            The AI is taking its time to give you a better answer.
+            Getting AI ready for the Job
           </p>
         </div>
       )}
