@@ -154,8 +154,7 @@ export default function FinanceAid() {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/job/retry/${jobId}/${Number(boxNumber)}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ payload, boxNumber }),
+        headers: { "Content-Type": "application/json" }
       });
       const data = await res.json();
 
