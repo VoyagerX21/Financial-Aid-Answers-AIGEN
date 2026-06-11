@@ -152,7 +152,7 @@ export default function FinanceAid() {
     responseElement.innerHTML = `<span class="result-typing-cursor"></span>`;
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/job/${jobId}/retry/${Number(boxNumber)}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/job/retry/${jobId}/${Number(boxNumber)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ payload, boxNumber }),
