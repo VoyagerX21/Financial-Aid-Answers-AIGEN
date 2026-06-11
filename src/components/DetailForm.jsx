@@ -12,6 +12,7 @@ export default function Personalization() {
   const [showMenu, setShowMenu] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [status, setStatus] = useState("student");
+  const [loading, setLoading] = useState(false);
 
   // Form fields
   const [name, setName] = useState("");
@@ -47,7 +48,6 @@ export default function Personalization() {
   // Form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoadingMessageIndex(Math.floor(Math.random() * loadingMessages.length));
     setLoading(true);
 
     const payload = {
@@ -63,7 +63,7 @@ export default function Personalization() {
     };
     try {
       const res = await fetch(
-        "https://geteasyserver.khakse.dev/GetPrompt",
+        `${import.meta.env.VITE_API_URL}/GetPrompt`,
         {
           method: "POST",
           headers: {

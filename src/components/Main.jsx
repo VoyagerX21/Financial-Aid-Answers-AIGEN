@@ -38,7 +38,7 @@ export default function Main() {
     try {
 
       const res = await fetch(
-        `https://geteasyserver.khakse.dev/search?query=${encodeURIComponent(
+        `${import.meta.env.VITE_API_URL}/search?query=${encodeURIComponent(
           searchText
         )}`
       );
@@ -136,7 +136,7 @@ export default function Main() {
       setLoading(true);
 
       const res = await fetch(
-        "https://geteasyserver.khakse.dev/submit",
+        `${import.meta.env.VITE_API_URL}/submit`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

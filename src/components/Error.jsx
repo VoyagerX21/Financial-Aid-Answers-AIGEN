@@ -12,6 +12,17 @@ const ErrorPage = () => {
     btn = "Try Again",
   } = state || {};
 
+  const retrywhole = async () => {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/job/retry/${state.job_id}/3`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    })
+    const data = await res.json();
+    navigate("/result", { state: state });
+  }
+
   return (
     <main>
       <div className="error-container">
@@ -21,7 +32,7 @@ const ErrorPage = () => {
             <h2>{title}</h2>
             <p style={{ textAlign: "center" }}>{desc}</p>
 
-            <button className="error-btn green" onClick={() => navigate("/results", { state: state })}>
+            <button className="error-btn green" onClick={retrywhole}>
               {btn}
             </button>
           </div>

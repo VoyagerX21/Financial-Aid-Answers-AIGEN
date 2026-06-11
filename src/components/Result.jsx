@@ -36,7 +36,7 @@ export default function FinanceAid() {
 
   const getresponse = async () => {
     setLoading(true);
-    const res = await fetch(`https://geteasyserver.khakse.dev/job/${jobId}`);
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/job/${jobId}`);
     const data = await res.json();
     return data;
   }
@@ -152,7 +152,7 @@ export default function FinanceAid() {
     responseElement.innerHTML = `<span class="result-typing-cursor"></span>`;
 
     try {
-      const res = await fetch(`https://geteasyserver.khakse.dev/job/${jobId}/retry/${boxNumber}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/job/${jobId}/retry/${boxNumber}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ payload, boxNumber }),
