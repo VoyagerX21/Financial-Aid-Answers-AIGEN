@@ -8,6 +8,7 @@ export default function FinanceAid() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [jobId, setJobId] = useState(state.job_id)
+  const completionTimeRef = useRef(null);
   const [showButtons, setShowButtons] = useState({
     1: false,
     2: false
@@ -34,6 +35,52 @@ export default function FinanceAid() {
 
   const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
   const closeDropdown = () => setDropdownOpen(false);
+
+  const formatCompletionTime = (value) => {
+    if (value === null || value === undefined || value === "") {
+      return "";
+    }
+
+    if (typeof value === "string") {
+      const trimmedValue = value.trim();
+
+      if (!/^\d+(\.\d+)?$/.test(trimmedValue)) {
+        return trimmedValue;
+      }
+
+      value = Number(trimmedValue);
+    }
+
+    const numericValue = Number(value);
+
+    if (!Number.isFinite(numericValue)) {
+      return String(value);
+    }
+
+    const totalSeconds = numericValue * 60;
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const parts = [];
+
+    if (hours > 0) {
+      parts.push(`${hours} hour${hours === 1 ? "" : "s"}`);
+    }
+
+    if (minutes > 0) {
+      parts.push(`${minutes} minute${minutes === 1 ? "" : "s"}`);
+    }
+
+    const formattedSeconds = Number.isInteger(seconds)
+      ? `${seconds} second${seconds === 1 ? "" : "s"}`
+      : `${seconds.toFixed(2).replace(/\.0+$/, "").replace(/(\.[0-9]*?)0+$/, "$1")} second${seconds === 1 ? "" : "s"}`;
+
+    if (seconds > 0.01 || parts.length === 0) {
+      parts.push(formattedSeconds);
+    }
+
+    return parts.join(", ");
+  };
 
   const getresponse = async () => {
     setLoading(true);
@@ -64,6 +111,10 @@ export default function FinanceAid() {
 
         clearInterval(pollingRef.current);
         pollingRef.current = null;
+
+        if (completionTimeRef.current === null && data.time !== undefined && data.time !== null) {
+          completionTimeRef.current = formatCompletionTime(data.time);
+        }
 
         setResponses({
           1: data.firstRes,
@@ -254,6 +305,16 @@ export default function FinanceAid() {
         </div>
 
         <h1 className="result-main-title">AI Financial Aid Responses</h1>
+
+        {completionTimeRef.current && (
+          <div className="result-time-banner">
+            <span className="result-time-banner-label">Completed in</span>
+            <strong className="result-time-banner-value">{completionTimeRef.current}</strong>
+            <span className="result-time-banner-note">
+              Captured once when the job finished and kept fixed, even after regeneration.
+            </span>
+          </div>
+        )}
 
         <div className="result-chat-container">
           <div className="result-container">
