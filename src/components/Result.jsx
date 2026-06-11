@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 export default function FinanceAid() {
   const { state } = useLocation();
+  const pollingref = useRef(null);
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -41,35 +42,64 @@ export default function FinanceAid() {
     return data;
   }
 
-  useEffect(() => {
-    let intervalId;
+  const pollingRef = useRef(null);
+
+  const configResponse = (val) => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+    }
+
     const fetchResponse = async () => {
       try {
         const data = await getresponse();
+
         if (data.status === "failed") {
-          clearInterval(intervalId);
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
           navigate("/error", { state: data });
           return;
         }
-        if (data.status === "running") {
-          return;
-        }
-        clearInterval(intervalId);
+
+        if (data.status === "running") return;
+
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+
         setResponses({
           1: data.firstRes,
           2: data.secondRes,
         });
+
         setLoading(false);
-        setTimeout(() => typeWriter(1, "result-response1", data.firstRes), 200);
-        setTimeout(() => typeWriter(2, "result-response2", data.secondRes), 300);
+
+        if (val === 1 || val === 3) {
+          setTimeout(() => typeWriter(1, "result-response1", data.firstRes), 200);
+        }
+
+        if (val === 2 || val === 3) {
+          setTimeout(() => typeWriter(2, "result-response2", data.secondRes), 300);
+        }
       } catch (err) {
-        clearInterval(intervalId);
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
         navigate("/error", { state: err });
       }
     };
+
     fetchResponse();
-    intervalId = setInterval(fetchResponse, 5000);
-    return () => clearInterval(intervalId);
+    pollingRef.current = setInterval(fetchResponse, 5000);
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+  };
+
+  useEffect(() => {
+    const cleanup = configResponse(3);
+    return cleanup;
   }, []);
 
   useEffect(() => {
@@ -102,6 +132,8 @@ export default function FinanceAid() {
   const typeWriter = (box, id, text, speed = 50) => {
     setShowButtons(prev => ({ ...prev, [box]: false }));
     const element = document.getElementById(id);
+    if (!element) return;
+
     element.innerHTML = `<span class="result-typing-cursor"></span>`;
 
     const words = text.split(" ");
@@ -113,22 +145,20 @@ export default function FinanceAid() {
 
     typingIntervals.current[id] = setInterval(() => {
       if (index < words.length) {
-        const newText = (
-          element.textContent.trim() +
-          " " +
-          words[index]
-        ).trim();
-        element.innerHTML =
-          newText + `<span class="result-typing-cursor"></span>`;
+        const currentText = element.textContent.replace("|", "").trim();
+        const newText = `${currentText} ${words[index]}`.trim();
+        element.innerHTML = `${newText}<span class="result-typing-cursor"></span>`;
         index++;
       } else {
         clearInterval(typingIntervals.current[id]);
+        delete typingIntervals.current[id];
+
         setTimeout(() => {
           element.innerHTML = text;
-        }, 1000);
+          setShowButtons(prev => ({ ...prev, [box]: true }));
+        }, 300);
       }
     }, speed);
-    setShowButtons(prev => ({ ...prev, [box]: true }));
   };
 
   const copyResponse = (boxNumber) => {
@@ -158,13 +188,12 @@ export default function FinanceAid() {
       });
       const data = await res.json();
 
-      setResponses((prev) => ({ ...prev, [boxNumber]: data.response }));
+      configResponse(Number(boxNumber));
 
       button.disabled = false;
       button.classList.remove("result-loading");
       button.textContent = "Regenerate";
 
-      typeWriter(boxNumber, `result-response${boxNumber}`, data.response, 80);
     } catch (error) {
       console.log(error);
       button.disabled = false;
