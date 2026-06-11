@@ -152,7 +152,7 @@ export default function FinanceAid() {
     responseElement.innerHTML = `<span class="result-typing-cursor"></span>`;
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/job/${jobId}/retry/${boxNumber}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/job/${jobId}/retry/${Number(boxNumber)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ payload, boxNumber }),
@@ -167,6 +167,7 @@ export default function FinanceAid() {
 
       typeWriter(boxNumber, `result-response${boxNumber}`, data.response, 80);
     } catch (error) {
+      console.log(error);
       button.disabled = false;
       button.classList.remove("result-loading");
       button.textContent = "Regenerate";
