@@ -103,7 +103,7 @@ export default function FinanceAid() {
         if (data.status === "failed") {
           clearInterval(pollingRef.current);
           pollingRef.current = null;
-          navigate("/error", { state: data });
+          navigate("/error", { state: { ...data, job_id: jobId } });
           return;
         }
 
@@ -133,7 +133,7 @@ export default function FinanceAid() {
       } catch (err) {
         clearInterval(pollingRef.current);
         pollingRef.current = null;
-        navigate("/error", { state: err });
+        navigate("/error", { state: { ...err, job_id: jobId } });
       }
     };
 
@@ -311,7 +311,7 @@ export default function FinanceAid() {
             <span className="result-time-banner-label">Completed in</span>
             <strong className="result-time-banner-value">{completionTimeRef.current}</strong>
             <span className="result-time-banner-note">
-              Captured once when the job finished and kept fixed, even after regeneration.
+              Tailored to your course and learning background.
             </span>
           </div>
         )}

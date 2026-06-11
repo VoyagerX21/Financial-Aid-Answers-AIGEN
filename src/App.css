@@ -51,6 +51,10 @@ body {
   overflow-x: hidden;
 }
 
+body.error-route-active {
+  overflow: hidden;
+}
+
 a {
   color: inherit;
 }
@@ -1010,25 +1014,69 @@ a {
 /* =========================
    Error Screen
    ========================= */
-.error-container {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 48px 18px;
-  text-align: center;
+.error-overlay-shell {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(7, 11, 23, 0.58);
+  backdrop-filter: blur(8px) saturate(110%);
+  -webkit-backdrop-filter: blur(8px) saturate(110%);
+  z-index: 2500;
 }
 
-.error-container h1 {
+.error-card {
+  width: min(520px, 100%);
+  padding: 28px 24px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(15, 23, 42, 0.9);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  text-align: center;
+  backdrop-filter: var(--blur);
+}
+
+.error-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(248, 113, 113, 0.16);
+  color: #fca5a5;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.error-card h1 {
   font-size: clamp(48px, 10vw, 88px);
   margin: 8px 0;
 }
 
-.error-container h2 {
+.error-card h2 {
   margin: 0;
   font-size: clamp(22px, 4vw, 30px);
 }
 
+.error-card p {
+  margin: 14px 0 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.error-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+
 .error-btn {
-  margin-top: 18px;
   padding: 12px 22px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
