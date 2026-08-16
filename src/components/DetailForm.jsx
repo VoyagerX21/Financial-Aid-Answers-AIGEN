@@ -63,7 +63,7 @@ export default function Personalization() {
     };
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/GetPrompt`,
+        `${window.__ENV__.VITE_API_URL}/GetPrompt`,
         {
           method: "POST",
           headers: {

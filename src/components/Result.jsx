@@ -84,7 +84,7 @@ export default function FinanceAid() {
 
   const getresponse = async () => {
     setLoading(true);
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/job/${jobId}`);
+    const res = await fetch(`${window.__ENV__.VITE_API_URL}/job/${jobId}`);
     const data = await res.json();
     return data;
   }
@@ -233,7 +233,7 @@ export default function FinanceAid() {
     responseElement.innerHTML = `<span class="result-typing-cursor"></span>`;
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/job/retry/${jobId}/${Number(boxNumber)}`, {
+      const res = await fetch(`${window.__ENV__.VITE_API_URL}/job/retry/${jobId}/${Number(boxNumber)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" }
       });

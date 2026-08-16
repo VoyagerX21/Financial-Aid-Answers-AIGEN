@@ -27,7 +27,7 @@ const ErrorPage = () => {
       return;
     }
 
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/job/retry/${jobId}/3`, {
+    const res = await fetch(`${window.__ENV__.VITE_API_URL}/job/retry/${jobId}/3`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

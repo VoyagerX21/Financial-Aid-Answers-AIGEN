@@ -60,6 +60,33 @@ npm run dev
 npm run build
 ```
 
+## 🐳 Docker
+
+The latest frontend image is available on Docker Hub.
+
+### Pull the Image
+
+```bash
+docker pull voyagerx21/geteasyaid:latest
+```
+
+### Run the Container
+
+```bash
+docker run -d \
+  --name geteasyaid \
+  -p 3000:3000 \
+  -e VITE_API_URL=https://geteasyserver.khakse.dev \
+  voyagerx21/geteasyaid:latest
+```
+
+The application will be available at:
+
+```text
+http://localhost:3000
+```
+
+
 ## 🛠️ Tech Stack
 
 * **React 19** — UI framework

@@ -38,7 +38,7 @@ export default function Main() {
     try {
 
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/search?query=${encodeURIComponent(
+        `${window.__ENV__.VITE_API_URL}/search?query=${encodeURIComponent(
           searchText
         )}`
       );
@@ -136,7 +136,7 @@ export default function Main() {
       setLoading(true);
 
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/submit`,
+        `${window.__ENV__.VITE_API_URL}/submit`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
