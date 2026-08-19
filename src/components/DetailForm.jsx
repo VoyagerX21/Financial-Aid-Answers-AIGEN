@@ -1,16 +1,19 @@
-import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { useLocation, useNavigate, Link } from "react-router-dom";
+import { ArrowLeft, GraduationCap, Briefcase, ExternalLink, Sparkles, CheckSquare, Square } from "lucide-react";
+import Header from "./common/Header";
+import Loader from "./common/Loader";
+import { useToast } from "./common/Toast";
 
 export default function Personalization() {
   const { state } = useLocation();
   const navigate = useNavigate();
+  const { addToast } = useToast();
 
   const obj = state?.obj || {};
   const courselist = state?.courselist || [];
   const specializationUrl = state?.url || null;
 
-  const [showMenu, setShowMenu] = useState(false);
-  const [showModal, setShowModal] = useState(false);
   const [status, setStatus] = useState("student");
   const [loading, setLoading] = useState(false);
 
@@ -22,32 +25,29 @@ export default function Personalization() {
   const [position, setPosition] = useState("");
   const [selectedCourses, setSelectedCourses] = useState([]);
 
-  // Handle specialization checkbox toggle
+  // Checkbox toggle
   const toggleCourse = (value) => {
     setSelectedCourses((prev) =>
       prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
     );
   };
 
-  // Modal
-  const openModal = () => setShowModal(true);
-  const closeModal = () => setShowModal(false);
-
-  // Dropdown menu
-  const toggleMenu = () => setShowMenu((p) => !p);
-
-  // Copy UPI
-  const copyUPI = () => {
-    navigator.clipboard.writeText("khakse2gaurav2003@okaxis");
+  const selectAllCourses = () => {
+    setSelectedCourses(courselist.map(([, val]) => val));
   };
 
-  // Status toggle
-  const setStudent = () => setStatus("student");
-  const setWorking = () => setStatus("working");
+  const clearAllCourses = () => {
+    setSelectedCourses([]);
+  };
 
   // Form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!name.trim()) {
+      addToast("Please enter your full name", "error");
+      return;
+    }
+
     setLoading(true);
 
     const payload = {
@@ -61,17 +61,16 @@ export default function Personalization() {
       year,
       position,
     };
+
     try {
-      const res = await fetch(
-        `${window.__ENV__.VITE_API_URL}/GetPrompt`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const apiUrl = window.__ENV__?.VITE_API_URL || "";
+      const res = await fetch(`${apiUrl}/GetPrompt`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
       const data = await res.json();
       if (data.success) {
@@ -79,164 +78,185 @@ export default function Personalization() {
       } else {
         navigate("/error", { state: data });
       }
-    } catch (e) {
-      console.error(e);
+    } catch (err) {
+      console.error(err);
+      addToast("Network error submitting application details", "error");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <>
+    <div className="app-layout">
+      <Header />
+
       {loading && (
-        <div className="loader-overlay">
-          <div className="loader-circle"></div>
-          <p style={{ color: "white", fontSize: "14px" }}>
-            Getting AI ready for the Job
-          </p>
-        </div>
+        <Loader
+          message="Synthesizing Personalized Financial Aid Essays..."
+          submessage="Applying prompt engineering to align with Coursera's acceptance criteria"
+        />
       )}
 
-      <div className="detailform-main-content">
-        <div className="header">
-          <div onClick={() => navigate("/")} className="home-btn">
-            Home
+      <main className="page-wrapper page-wrapper-narrow">
+        <div className="detail-page-header">
+          <div className="back-btn-link" onClick={() => navigate("/")} role="button" tabIndex={0}>
+            <ArrowLeft size={16} />
+            <span>Back to course search</span>
           </div>
 
-          <div className="header-right">
-            <button
-              className="icon-btn icon-menu"
-              onClick={toggleMenu}
-            ></button>
-
-            {showMenu && (
-              <div className={`dropdown-menu ${showMenu ? "active" : ""}`}>
-                <a
-                  href="https://github.com/VoyagerX21/Get-AidEasy"
-                  target="_blank"
-                >
-                  Source Code
-                </a>
-                <a
-                  href="https://www.instagram.com/_gaurav.khakse_/"
-                  target="_blank"
-                >
-                  Stalk my insta?
-                </a>
-                <a style={{cursor: "pointer"}}onClick={openModal}>Buy me a coffee ☕️</a>
-              </div>
-            )}
-          </div>
+          <h1 className="detail-page-title">Personalize Your Application</h1>
+          <p className="detail-page-subtitle">
+            Provide a few details so the AI can craft authentic, persuasive responses tailored to your profile.
+          </p>
         </div>
 
-        <div className="detailform-chat-container">
-          <div className="detailform-form-container">
-            <form onSubmit={handleSubmit}>
-              <div className="detailform-form-group">
-                <label>Selected Course</label>
-                <input type="text" disabled value={obj.title || ""} />
+        {/* Selected Course Banner */}
+        <div className="selected-course-banner">
+          <div className="selected-course-info">
+            <span className="selected-course-tag">Selected Course</span>
+            <span className="selected-course-name">{obj.title || "No course selected"}</span>
+          </div>
+          {obj.Organization && (
+            <span className="badge badge-muted">{obj.Organization}</span>
+          )}
+        </div>
+
+        {/* Specialization notice & completed courses */}
+        {(specializationUrl || courselist.length > 0) && (
+          <>
+            {specializationUrl && (
+              <div className="spec-notice-banner">
+                <Sparkles size={18} />
+                <span>
+                  This course is part of a specialization.{" "}
+                  <a href={specializationUrl} target="_blank" rel="noopener noreferrer">
+                    View on Coursera <ExternalLink size={12} style={{ display: "inline", verticalAlign: "middle" }} />
+                  </a>
+                </span>
               </div>
+            )}
 
-              {(specializationUrl || courselist.length > 0) && (
-                <>
-                  <p className="detailform-indicatorOfSpec">
-                    This course is under a{" "}
-                    <a
-                      href={specializationUrl}
-                      style={{ color: "black" }}
-                      target="_blank"
+            {courselist.length > 0 && (
+              <div className="course-checklist-section">
+                <div className="course-checklist-header">
+                  <span className="course-checklist-title">
+                    Optional: Select courses in this series you have already completed
+                  </span>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={selectAllCourses}
                     >
-                      specialization
-                    </a>
-                  </p>
-
-                  <div className="detailform-specialization-section">
-                    <div className="detailform-specialization-title">
-                      ✓ Check other completed courses below
-                    </div>
-
-                    <div className="detailform-courses-grid">
-                      {courselist.map(([idx, val]) => (
-                        <label
-                          key={idx}
-                          className="detailform-checkbox-wrapper"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedCourses.includes(val)}
-                            onChange={() => toggleCourse(val)}
-                          />
-                          <span className="detailform-check-box"></span>
-                          <span className="detailform-course-label">{val}</span>
-                        </label>
-                      ))}
-                    </div>
+                      Select All
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={clearAllCourses}
+                    >
+                      Clear
+                    </button>
                   </div>
-                </>
-              )}
+                </div>
 
-              <div className="detailform-form-group">
-                <label>Full Name:</label>
+                <div className="course-checklist-grid">
+                  {courselist.map(([idx, val]) => {
+                    const isChecked = selectedCourses.includes(val);
+                    return (
+                      <label key={idx} className="course-checkbox-card">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleCourse(val)}
+                        />
+                        <span className="course-checkbox-label">{val}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Main Personalization Form */}
+        <div className="saas-card">
+          <div className="saas-card-header">
+            <div>
+              <h2 className="saas-card-title">Applicant Profile</h2>
+              <p className="saas-card-description">This information will be woven naturally into your essays.</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <div className="saas-card-body">
+              <div className="form-group">
+                <label className="form-label" htmlFor="fullName">
+                  Full Name
+                </label>
                 <input
+                  id="fullName"
                   type="text"
+                  className="form-input"
+                  placeholder="e.g. Gaurav Khakse"
                   value={name}
                   required
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
 
-              <div className="detailform-form-group">
-                <label>Status:</label>
-                <div className="detailform-toggle-container">
-                  <span
-                    className={`detailform-toggle-label ${
-                      status === "student" ? "active" : ""
-                    }`}
-                    onClick={setStudent}
+              <div className="form-group">
+                <label className="form-label">Current Academic / Professional Status</label>
+                <div className="segmented-control">
+                  <button
+                    type="button"
+                    className={`segmented-btn ${status === "student" ? "active" : ""}`}
+                    onClick={() => setStatus("student")}
                   >
-                    Student
-                  </span>
+                    <GraduationCap size={16} />
+                    <span>Student / Academic</span>
+                  </button>
 
-                  <div
-                    className={`detailform-toggle-switch ${
-                      status === "working" ? "active" : ""
-                    }`}
-                    onClick={() =>
-                      setStatus(status === "student" ? "working" : "student")
-                    }
+                  <button
+                    type="button"
+                    className={`segmented-btn ${status === "working" ? "active" : ""}`}
+                    onClick={() => setStatus("working")}
                   >
-                    <div className="detailform-toggle-slider"></div>
-                  </div>
-
-                  <span
-                    className={`detailform-toggle-label ${
-                      status === "working" ? "active" : ""
-                    }`}
-                    onClick={setWorking}
-                  >
-                    Working
-                  </span>
+                    <Briefcase size={16} />
+                    <span>Working Professional</span>
+                  </button>
                 </div>
               </div>
 
               {status === "student" && (
                 <>
-                  <div className="detailform-form-group">
-                    <label>Institute/School:</label>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="institute">
+                      University / College / School Name
+                    </label>
                     <input
+                      id="institute"
                       type="text"
+                      className="form-input"
+                      placeholder="e.g., Delhi University, Stanford University"
                       value={institute}
                       onChange={(e) => setInstitute(e.target.value)}
                     />
                   </div>
 
-                  <div className="detailform-form-group">
-                    <label>Year of Study:</label>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="yearOfStudy">
+                      Year of Study
+                      <span className="form-label-optional">Optional</span>
+                    </label>
                     <input
+                      id="yearOfStudy"
                       type="text"
+                      className="form-input"
+                      placeholder="e.g., 2nd Year, Final Year"
                       value={year}
                       onChange={(e) => setYear(e.target.value)}
-                      placeholder="e.g., 2"
                     />
                   </div>
                 </>
@@ -244,74 +264,54 @@ export default function Personalization() {
 
               {status === "working" && (
                 <>
-                  <div className="detailform-form-group">
-                    <label>Organization:</label>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="organization">
+                      Company / Organization Name
+                    </label>
                     <input
+                      id="organization"
                       type="text"
+                      className="form-input"
+                      placeholder="e.g., Acme Tech, Freelance"
                       value={organization}
                       onChange={(e) => setOrganization(e.target.value)}
                     />
                   </div>
 
-                  <div className="detailform-form-group">
-                    <label>Position:</label>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="position">
+                      Current Role / Title
+                      <span className="form-label-optional">Optional</span>
+                    </label>
                     <input
+                      id="position"
                       type="text"
+                      className="form-input"
+                      placeholder="e.g., Junior Developer, Intern, Data Analyst"
                       value={position}
                       onChange={(e) => setPosition(e.target.value)}
-                      placeholder="e.g., Software Engineer"
                     />
                   </div>
                 </>
               )}
-
-              <button type="submit" className="detailform-submit-btn">
-                Get Result
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      {showModal && (
-        <div className={`overlay ${showModal ? "active" : ""}`} onClick={closeModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={closeModal}>
-              ×
-            </button>
-
-            <h2>Buy me a coffee!</h2>
-
-            <div className="modal-content">
-              <div className="modal-message">
-                <strong>Hey there! 👋</strong>
-                <br />
-                <br />
-                If my work helped you in any way or brought a smile to your face,
-                consider buying me a coffee! ☕<br />
-              </div>
-
-              <div className="upi-section">
-                <div className="upi-label">📱 UPI ID</div>
-
-                <div className="upi-id" onClick={copyUPI}>
-                  khakse2gaurav2003@okaxis
-                </div>
-
-                <div className="copy-hint">👆 Click to copy UPI ID</div>
-              </div>
-
-              <div className="thank-you">
-                <strong>Thank you so much! 🙏</strong>
-                <br />
-                Your support means the world to me and helps me keep creating!
-                <br />
-                <em>- Gaurav</em>
-              </div>
             </div>
-          </div>
+
+            <div className="saas-card-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => navigate("/")}
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary">
+                <Sparkles size={16} />
+                <span>Generate Application Answers</span>
+              </button>
+            </div>
+          </form>
         </div>
-      )}
-    </>
+      </main>
+    </div>
   );
 }

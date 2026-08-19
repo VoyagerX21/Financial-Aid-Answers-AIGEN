@@ -1,29 +1,40 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Copy, Check, RefreshCw, AlertTriangle, Clock, ArrowLeft, CheckCircle2, Sparkles } from "lucide-react";
+import Header from "./common/Header";
+import Loader from "./common/Loader";
+import { useToast } from "./common/Toast";
+
+const LOADING_MESSAGES = [
+  "Analyzing your background and course curriculum...",
+  "Drafting persuasive, authentic financial aid essays...",
+  "Validating word count and requirements...",
+  "Polishing essay tone and formatting...",
+  "Finalizing your application answers...",
+];
 
 export default function FinanceAid() {
   const { state } = useLocation();
-  const pollingref = useRef(null);
   const navigate = useNavigate();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [jobId, setJobId] = useState(state.job_id)
+  const { addToast } = useToast();
+
+  const jobId = state?.job_id || state?.jobId || null;
   const completionTimeRef = useRef(null);
   const [showButtons, setShowButtons] = useState({
     1: false,
-    2: false
+    2: false,
+  });
+  const [copiedBox, setCopiedBox] = useState({
+    1: false,
+    2: false,
+    all: false,
   });
   const [loading, setLoading] = useState(false);
-  const loadingMessages = [
-    "Almost there...",
-    "Hang on tight...",
-    "Thinking hard...",
-    "Warming up the AI...",
-    "Polishing your result...",
-    "A few more seconds...",
-    "Finalizing the answer...",
-    "Just a moment longer...",
-  ];
+  const [regenerating, setRegenerating] = useState({
+    1: false,
+    2: false,
+  });
+
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
   const [responses, setResponses] = useState({
@@ -32,9 +43,7 @@ export default function FinanceAid() {
   });
 
   const typingIntervals = useRef({});
-
-  const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
-  const closeDropdown = () => setDropdownOpen(false);
+  const pollingRef = useRef(null);
 
   const formatCompletionTime = (value) => {
     if (value === null || value === undefined || value === "") {
@@ -43,16 +52,13 @@ export default function FinanceAid() {
 
     if (typeof value === "string") {
       const trimmedValue = value.trim();
-
       if (!/^\d+(\.\d+)?$/.test(trimmedValue)) {
         return trimmedValue;
       }
-
       value = Number(trimmedValue);
     }
 
     const numericValue = Number(value);
-
     if (!Number.isFinite(numericValue)) {
       return String(value);
     }
@@ -64,34 +70,68 @@ export default function FinanceAid() {
     const parts = [];
 
     if (hours > 0) {
-      parts.push(`${hours} hour${hours === 1 ? "" : "s"}`);
+      parts.push(`${hours}h`);
     }
-
     if (minutes > 0) {
-      parts.push(`${minutes} minute${minutes === 1 ? "" : "s"}`);
+      parts.push(`${minutes}m`);
     }
-
     const formattedSeconds = Number.isInteger(seconds)
-      ? `${seconds} second${seconds === 1 ? "" : "s"}`
-      : `${seconds.toFixed(2).replace(/\.0+$/, "").replace(/(\.[0-9]*?)0+$/, "$1")} second${seconds === 1 ? "" : "s"}`;
+      ? `${seconds}s`
+      : `${seconds.toFixed(1).replace(/\.0$/, "")}s`;
 
     if (seconds > 0.01 || parts.length === 0) {
       parts.push(formattedSeconds);
     }
 
-    return parts.join(", ");
+    return parts.join(" ");
   };
 
-  const getresponse = async () => {
+  const countWords = (text) => {
+    if (!text || typeof text !== "string") return 0;
+    return text.trim().split(/\s+/).filter(Boolean).length;
+  };
+
+  const typeWriter = useCallback((box, elementId, text, speed = 35) => {
+    setShowButtons((prev) => ({ ...prev, [box]: false }));
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    element.innerHTML = `<span class="typing-cursor"></span>`;
+
+    const words = text.split(" ");
+    let index = 0;
+
+    if (typingIntervals.current[elementId]) {
+      clearInterval(typingIntervals.current[elementId]);
+    }
+
+    typingIntervals.current[elementId] = setInterval(() => {
+      if (index < words.length) {
+        const currentText = element.textContent.replace("|", "").trim();
+        const newText = `${currentText} ${words[index]}`.trim();
+        element.innerHTML = `${newText}<span class="typing-cursor"></span>`;
+        index++;
+      } else {
+        clearInterval(typingIntervals.current[elementId]);
+        delete typingIntervals.current[elementId];
+
+        setTimeout(() => {
+          element.innerHTML = text;
+          setShowButtons((prev) => ({ ...prev, [box]: true }));
+        }, 200);
+      }
+    }, speed);
+  }, []);
+
+  const getresponse = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`${window.__ENV__.VITE_API_URL}/job/${jobId}`);
+    const apiUrl = window.__ENV__?.VITE_API_URL || "";
+    const res = await fetch(`${apiUrl}/job/${jobId}`);
     const data = await res.json();
     return data;
-  }
+  }, [jobId]);
 
-  const pollingRef = useRef(null);
-
-  const configResponse = (val) => {
+  const configResponse = useCallback((val) => {
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
     }
@@ -101,38 +141,44 @@ export default function FinanceAid() {
         const data = await getresponse();
 
         if (data.status === "failed") {
-          clearInterval(pollingRef.current);
-          pollingRef.current = null;
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+          }
           navigate("/error", { state: { ...data, job_id: jobId } });
           return;
         }
 
         if (data.status === "running") return;
 
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
 
         if (completionTimeRef.current === null && data.time !== undefined && data.time !== null) {
           completionTimeRef.current = formatCompletionTime(data.time);
         }
 
         setResponses({
-          1: data.firstRes,
-          2: data.secondRes,
+          1: data.firstRes || "",
+          2: data.secondRes || "",
         });
 
         setLoading(false);
 
         if (val === 1 || val === 3) {
-          setTimeout(() => typeWriter(1, "result-response1", data.firstRes), 200);
+          setTimeout(() => typeWriter(1, "result-response-1", data.firstRes || ""), 150);
         }
 
         if (val === 2 || val === 3) {
-          setTimeout(() => typeWriter(2, "result-response2", data.secondRes), 300);
+          setTimeout(() => typeWriter(2, "result-response-2", data.secondRes || ""), 250);
         }
       } catch (err) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
         navigate("/error", { state: { ...err, job_id: jobId } });
       }
     };
@@ -146,17 +192,16 @@ export default function FinanceAid() {
         pollingRef.current = null;
       }
     };
-  };
+  }, [getresponse, jobId, navigate, typeWriter]);
 
   useEffect(() => {
+    if (!jobId) {
+      navigate("/");
+      return;
+    }
     const cleanup = configResponse(3);
     return cleanup;
-  }, []);
-
-  useEffect(() => {
-    document.addEventListener("click", handleOutside);
-    return () => document.removeEventListener("click", handleOutside);
-  });
+  }, [jobId, navigate, configResponse]);
 
   useEffect(() => {
     if (!loading) {
@@ -165,256 +210,247 @@ export default function FinanceAid() {
     }
 
     const intervalId = setInterval(() => {
-      setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
-    }, 1200);
+      setLoadingMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+    }, 1400);
 
     return () => clearInterval(intervalId);
   }, [loading]);
 
-  const handleOutside = (e) => {
-    const menuBtn = document.querySelector(".icon-menu");
-    const menu = document.getElementById("result-dropdownMenu");
-
-    if (menuBtn && menu && !menuBtn.contains(e.target) && !menu.contains(e.target)) {
-      closeDropdown();
-    }
-  };
-
-  const typeWriter = (box, id, text, speed = 50) => {
-    setShowButtons(prev => ({ ...prev, [box]: false }));
-    const element = document.getElementById(id);
-    if (!element) return;
-
-    element.innerHTML = `<span class="result-typing-cursor"></span>`;
-
-    const words = text.split(" ");
-    let index = 0;
-
-    if (typingIntervals.current[id]) {
-      clearInterval(typingIntervals.current[id]);
-    }
-
-    typingIntervals.current[id] = setInterval(() => {
-      if (index < words.length) {
-        const currentText = element.textContent.replace("|", "").trim();
-        const newText = `${currentText} ${words[index]}`.trim();
-        element.innerHTML = `${newText}<span class="result-typing-cursor"></span>`;
-        index++;
-      } else {
-        clearInterval(typingIntervals.current[id]);
-        delete typingIntervals.current[id];
-
-        setTimeout(() => {
-          element.innerHTML = text;
-          setShowButtons(prev => ({ ...prev, [box]: true }));
-        }, 300);
-      }
-    }, speed);
-  };
-
   const copyResponse = (boxNumber) => {
-    const text = document
-      .getElementById(`result-response${boxNumber}`)
-      .textContent.trim();
+    const text = document.getElementById(`result-response-${boxNumber}`)?.textContent?.trim() || responses[boxNumber];
+    if (!text) return;
+
     navigator.clipboard.writeText(text);
-    alert("Content Copied!");
+    setCopiedBox((prev) => ({ ...prev, [boxNumber]: true }));
+    addToast(`Question ${boxNumber} answer copied to clipboard!`, "success");
+    setTimeout(() => {
+      setCopiedBox((prev) => ({ ...prev, [boxNumber]: false }));
+    }, 2000);
   };
 
-  const generateResponse = async (boxNumber, buttonElement) => {
-    const button = buttonElement;
-    const responseElement = document.getElementById(
-      `result-response${boxNumber}`
-    );
+  const copyAllResponses = () => {
+    const text1 = document.getElementById("result-response-1")?.textContent?.trim() || responses[1];
+    const text2 = document.getElementById("result-response-2")?.textContent?.trim() || responses[2];
 
-    button.disabled = true;
-    button.classList.add("result-loading");
-    button.textContent = "";
+    const fullText = `--- Coursera Financial Aid Application ---\n\nQ1: Why are you applying for financial aid?\n\n${text1}\n\n=========================================\n\nQ2: How will your selected course help with your goals?\n\n${text2}`;
 
-    responseElement.innerHTML = `<span class="result-typing-cursor"></span>`;
+    navigator.clipboard.writeText(fullText);
+    setCopiedBox((prev) => ({ ...prev, all: true }));
+    addToast("All application answers copied to clipboard!", "success");
+    setTimeout(() => {
+      setCopiedBox((prev) => ({ ...prev, all: false }));
+    }, 2500);
+  };
+
+  const generateResponse = async (boxNumber) => {
+    const responseElement = document.getElementById(`result-response-${boxNumber}`);
+    setRegenerating((prev) => ({ ...prev, [boxNumber]: true }));
+    setShowButtons((prev) => ({ ...prev, [boxNumber]: false }));
+
+    if (responseElement) {
+      responseElement.innerHTML = `<span class="typing-cursor"></span>`;
+    }
 
     try {
-      const res = await fetch(`${window.__ENV__.VITE_API_URL}/job/retry/${jobId}/${Number(boxNumber)}`, {
+      const apiUrl = window.__ENV__?.VITE_API_URL || "";
+      await fetch(`${apiUrl}/job/retry/${jobId}/${Number(boxNumber)}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
       });
-      const data = await res.json();
 
       configResponse(Number(boxNumber));
-
-      button.disabled = false;
-      button.classList.remove("result-loading");
-      button.textContent = "Regenerate";
-
     } catch (error) {
-      console.log(error);
-      button.disabled = false;
-      button.classList.remove("result-loading");
-      button.textContent = "Regenerate";
-      responseElement.innerHTML = "Error generating response.";
+      console.error(error);
+      if (responseElement) {
+        responseElement.innerHTML = "Error generating response. Please try again.";
+      }
+      addToast("Failed to regenerate response", "error");
+    } finally {
+      setRegenerating((prev) => ({ ...prev, [boxNumber]: false }));
     }
   };
 
+  const wordCount1 = countWords(responses[1]);
+  const wordCount2 = countWords(responses[2]);
+
   return (
-    <>
+    <div className="app-layout">
+      <Header />
+
       {loading && (
-        <div className="loader-overlay">
-          <div className="loader-circle"></div>
-          <p style={{ color: "white", fontWeight: "bold" }}>
-            {loadingMessages[loadingMessageIndex]}
-          </p>
-          <p style={{ color: "white", fontSize: "14px" }}>
-            The AI is taking its time to give you a better answer.
-          </p>
-        </div>
+        <Loader
+          message={LOADING_MESSAGES[loadingMessageIndex]}
+          submessage="Polling server for completion..."
+        />
       )}
-      <div className="result-main-content">
-        <div className="header">
-          <div
-            className="home-btn"
-            onClick={() => (window.location.href = "/")}
-          >
-            Home
-          </div>
 
-          <div className="header-right">
-            <button
-              className="icon-btn icon-menu"
-              onClick={toggleDropdown}
-            ></button>
-
-            {dropdownOpen && (
-              <div className={`dropdown-menu ${dropdownOpen ? "active" : ""}`} id="result-dropdownMenu">
-                <a
-                  href="https://github.com/VoyagerX21/Get-AidEasy"
-                  target="_blank"
-                >
-                  Source Code
-                </a>
-                <a
-                  href="https://www.instagram.com/_gaurav.khakse_/"
-                  target="_blank"
-                >
-                  Stalk my insta?
-                </a>
-                <a style={{ cursor: "pointer" }} href="#" onClick={(e) => { e.preventDefault(); setModalOpen(true); }}>
-                  Buy me a coffee ☕️
-                </a>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <h1 className="result-main-title">AI Financial Aid Responses</h1>
-
-        {completionTimeRef.current && (
-          <div className="result-time-banner">
-            <span className="result-time-banner-label">Completed in</span>
-            <strong className="result-time-banner-value">{completionTimeRef.current}</strong>
-            <span className="result-time-banner-note">
-              Tailored to your course and learning background.
-            </span>
-          </div>
-        )}
-
-        <div className="result-chat-container">
-          <div className="result-container">
-            <ResponseBox
-              title="Why Are You Applying For Financial Aid?"
-              boxNumber={1}
-              text={responses[1]}
-              onCopy={copyResponse}
-              onRegenerate={generateResponse}
-              showButtons={showButtons[1]}
-            />
-
-            <ResponseBox
-              title="How Will Your Selected Course Help With Your Goals?"
-              boxNumber={2}
-              text={responses[2]}
-              onCopy={copyResponse}
-              onRegenerate={generateResponse}
-              showButtons={showButtons[2]}
-            />
-          </div>
-        </div>
-
-        {modalOpen && <CoffeeModal onClose={() => setModalOpen(false)} />}
-      </div>
-    </>
-  );
-}
-
-function ResponseBox({ title, boxNumber, text, onCopy, onRegenerate, showButtons }) {
-  return (
-    <div className="result-response-box">
-      <h2>{title}</h2>
-
-      <div className="result-content-area">
-        <div className="result-ai-response" id={`result-response${boxNumber}`}>
-          <span className="result-typing-cursor"></span>
-        </div>
-      </div>
-
-      <div className="result-button-group">
-        <p className="result-warning">
-          ⚠️ "AI answers may have flaws, so double-check before you trust!"
-        </p>
-
-        {showButtons ? <div className="result-buttons-only">
-          <button className="result-copy-btn" onClick={() => onCopy(boxNumber)}>
-            Copy
-          </button>
-
-          <button
-            className="result-regenerate-btn"
-            onClick={(e) => onRegenerate(boxNumber, e.target)}
-          >
-            Regenerate
-          </button>
-        </div> : null}
-      </div>
-    </div>
-  );
-}
-
-function CoffeeModal({ onClose }) {
-  const copyUPI = () => {
-    navigator.clipboard.writeText("khakse2gaurav2003@okaxis");
-    alert("Copied UPI ID!");
-  };
-
-  return (
-    <div className="overlay active" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <button className="close-btn" onClick={onClose}>
-          &times;
-        </button>
-
-        <h2>Buy me a coffee!</h2>
-
-        <div className="modal-content">
-          <div className="modal-message">
-            <strong>Hey there! 👋</strong>
-            <br />
-            <br />
-            If my work helped you in any way, consider buying me a coffee!
-          </div>
-
-          <div className="upi-section">
-            <div className="upi-label">📱 UPI ID</div>
-
-            <div className="upi-id" onClick={copyUPI}>
-              khakse2gaurav2003@okaxis
+      <main className="page-wrapper page-wrapper-wide">
+        <div className="result-header-bar">
+          <div className="result-title-section">
+            <h1 className="result-main-title">Financial Aid Application Answers</h1>
+            <div className="result-meta-badges">
+              {completionTimeRef.current && (
+                <span className="badge badge-success">
+                  <Clock size={13} />
+                  <span>Generated in {completionTimeRef.current}</span>
+                </span>
+              )}
+              <span className="badge badge-primary">
+                <Sparkles size={13} />
+                <span>AI Tailored</span>
+              </span>
             </div>
-            <div className="copy-hint">👆 Click to copy UPI ID</div>
           </div>
 
-          <div className="thank-you">
-            Thank you so much! 🙏
-            <br />- Gaurav
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => navigate("/details", { state })}
+            >
+              <ArrowLeft size={14} />
+              <span>Edit Details</span>
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={copyAllResponses}
+            >
+              {copiedBox.all ? <Check size={14} /> : <Copy size={14} />}
+              <span>{copiedBox.all ? "Copied All!" : "Copy Both Answers"}</span>
+            </button>
           </div>
         </div>
-      </div>
+
+        <div className="disclaimer-alert">
+          <AlertTriangle size={18} className="disclaimer-icon" />
+          <div>
+            <strong>Review before submitting:</strong> Coursera applications are reviewed for authenticity. Make sure all personal details, goals, and university/company names accurately represent your situation.
+          </div>
+        </div>
+
+        <div className="result-grid">
+          {/* Question 1 Box */}
+          <div className="response-card">
+            <div className="response-card-header">
+              <h2 className="response-card-question-title">
+                1. Why are you applying for financial aid?
+              </h2>
+            </div>
+
+            <div className="response-text-area" id="result-response-1">
+              <span className="typing-cursor"></span>
+            </div>
+
+            <div className="response-card-footer">
+              <div className={`word-count-indicator ${wordCount1 >= 150 ? "valid" : ""}`}>
+                {wordCount1 >= 150 && <CheckCircle2 size={15} />}
+                <span>
+                  {wordCount1} words {wordCount1 >= 150 ? "(Meets 150-word requirement)" : ""}
+                </span>
+              </div>
+
+              {showButtons[1] && (
+                <div className="response-action-buttons">
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    disabled={regenerating[1]}
+                    onClick={() => generateResponse(1)}
+                  >
+                    <RefreshCw size={14} className={regenerating[1] ? "saas-loader-spinner" : ""} />
+                    <span>Regenerate</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`btn ${copiedBox[1] ? "btn-success" : "btn-primary"} btn-sm`}
+                    onClick={() => copyResponse(1)}
+                  >
+                    {copiedBox[1] ? <Check size={14} /> : <Copy size={14} />}
+                    <span>{copiedBox[1] ? "Copied!" : "Copy Answer"}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Question 2 Box */}
+          <div className="response-card">
+            <div className="response-card-header">
+              <h2 className="response-card-question-title">
+                2. How will this course help with your goals?
+              </h2>
+            </div>
+
+            <div className="response-text-area" id="result-response-2">
+              <span className="typing-cursor"></span>
+            </div>
+
+            <div className="response-card-footer">
+              <div className={`word-count-indicator ${wordCount2 >= 150 ? "valid" : ""}`}>
+                {wordCount2 >= 150 && <CheckCircle2 size={15} />}
+                <span>
+                  {wordCount2} words {wordCount2 >= 150 ? "(Meets 150-word requirement)" : ""}
+                </span>
+              </div>
+
+              {showButtons[2] && (
+                <div className="response-action-buttons">
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    disabled={regenerating[2]}
+                    onClick={() => generateResponse(2)}
+                  >
+                    <RefreshCw size={14} className={regenerating[2] ? "saas-loader-spinner" : ""} />
+                    <span>Regenerate</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`btn ${copiedBox[2] ? "btn-success" : "btn-primary"} btn-sm`}
+                    onClick={() => copyResponse(2)}
+                  >
+                    {copiedBox[2] ? <Check size={14} /> : <Copy size={14} />}
+                    <span>{copiedBox[2] ? "Copied!" : "Copy Answer"}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="result-bottom-actions">
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={() => navigate("/")}
+          >
+            <ArrowLeft size={16} />
+            <span>Search Another Course</span>
+          </button>
+
+          <div style={{ display: "flex", gap: "10px" }}>
+            <a
+              href="https://github.com/VoyagerX21/Get-AidEasy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-secondary"
+            >
+              <span>Star on GitHub ⭐</span>
+            </a>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={copyAllResponses}
+            >
+              <Copy size={16} />
+              <span>Copy All Answers</span>
+            </button>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

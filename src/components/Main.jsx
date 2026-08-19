@@ -1,76 +1,108 @@
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search } from 'lucide-react';
+import { Search, Sparkles, BookOpen, CheckCircle2, ShieldCheck, Loader2 } from "lucide-react";
+import Header from "./common/Header";
+import Loader from "./common/Loader";
+import { useToast } from "./common/Toast";
+
+const LOADING_MESSAGES = [
+  "Fetching course details...",
+  "Analyzing syllabus and curriculum...",
+  "Preparing your personalization form...",
+  "Almost ready...",
+];
 
 export default function Main() {
   const navigate = useNavigate();
-
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
+  const { addToast } = useToast();
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [highlight, setHighlight] = useState(-1);
   const [showDropdown, setShowDropdown] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   const [loading, setLoading] = useState(false);
-  const loadingMessages = [
-    "Fetching course details...",
-    "Crunching your selection...",
-    "Preparing your next step...",
-    "Almost there...",
-  ];
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
   const debounceRef = useRef(null);
 
-  const searchCourses = async (searchText) => {
+  const searchCourses = useCallback(async (searchText) => {
     if (!searchText.trim()) {
       setResults([]);
       setHasSearched(false);
       setShowDropdown(false);
+      setIsSearching(false);
       return;
     }
 
+    setIsSearching(true);
     try {
-
+      const apiUrl = window.__ENV__?.VITE_API_URL || "";
       const res = await fetch(
-        `${window.__ENV__.VITE_API_URL}/search?query=${encodeURIComponent(
-          searchText
-        )}`
+        `${apiUrl}/search?query=${encodeURIComponent(searchText)}`
       );
 
       const data = await res.json();
-      // console.log(data);
       if (data.success) {
         setResults(data.results || []);
         setHasSearched(true);
         setShowDropdown(true);
+        setHighlight(-1);
       }
     } catch (err) {
       console.error("Search error:", err);
+      addToast("Failed to search courses. Please check connection.", "error");
     } finally {
-      
+      setIsSearching(false);
     }
-  };
+  }, [addToast]);
+
+  const select = useCallback(async (item) => {
+    setQuery(item.title);
+    setShowDropdown(false);
+
+    try {
+      setLoadingMessageIndex(0);
+      setLoading(true);
+
+      const apiUrl = window.__ENV__?.VITE_API_URL || "";
+      const res = await fetch(`${apiUrl}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ obj: item }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        navigate("/details", { state: data });
+      } else {
+        addToast(data.message || "Failed to load course details", "error");
+      }
+    } catch {
+      addToast("Network error communicating with server", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [navigate, addToast]);
 
   useEffect(() => {
     if (!query.trim()) {
       setResults([]);
+      setShowDropdown(false);
       return;
     }
 
     clearTimeout(debounceRef.current);
-
     debounceRef.current = setTimeout(() => {
       searchCourses(query);
-    }, 400); // debounce delay
+    }, 350);
 
     return () => clearTimeout(debounceRef.current);
-  }, [query]);
+  }, [query, searchCourses]);
 
   useEffect(() => {
     if (!loading) {
@@ -79,45 +111,48 @@ export default function Main() {
     }
 
     const intervalId = setInterval(() => {
-      setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
-    }, 1200);
+      setLoadingMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+    }, 1400);
 
     return () => clearInterval(intervalId);
   }, [loading]);
 
+  // Keyboard navigation & global shortcuts (/ or Cmd+K)
   useEffect(() => {
     const handleKeys = (e) => {
+      // Focus search input on '/' or 'Cmd+K' / 'Ctrl+K' when not in input
+      if ((e.key === "/" || ((e.metaKey || e.ctrlKey) && e.key === "k")) && document.activeElement !== inputRef.current) {
+        e.preventDefault();
+        inputRef.current?.focus();
+        return;
+      }
+
       if (!showDropdown) return;
 
       if (e.key === "Escape") {
         setShowDropdown(false);
-      }
-
-      if (e.key === "ArrowDown") {
+      } else if (e.key === "ArrowDown") {
         e.preventDefault();
         setHighlight((h) => Math.min(h + 1, results.length - 1));
-      }
-
-      if (e.key === "ArrowUp") {
+      } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setHighlight((h) => Math.max(h - 1, 0));
-      }
-
-      if (e.key === "Enter" && highlight >= 0) {
+      } else if (e.key === "Enter" && highlight >= 0 && results[highlight]) {
+        e.preventDefault();
         select(results[highlight]);
       }
     };
 
     document.addEventListener("keydown", handleKeys);
     return () => document.removeEventListener("keydown", handleKeys);
-  }, [results, highlight, showDropdown]);
+  }, [results, highlight, showDropdown, select]);
 
   useEffect(() => {
     const clickOutside = (e) => {
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(e.target) &&
-        !inputRef.current.contains(e.target)
+        !inputRef.current?.contains(e.target)
       ) {
         setShowDropdown(false);
       }
@@ -127,162 +162,116 @@ export default function Main() {
     return () => document.removeEventListener("click", clickOutside);
   }, []);
 
-  const select = async (item) => {
-    setQuery(item.title);
-    setShowDropdown(false);
-
-    try {
-      setLoadingMessageIndex(Math.floor(Math.random() * loadingMessages.length));
-      setLoading(true);
-
-      const res = await fetch(
-        `${window.__ENV__.VITE_API_URL}/submit`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ obj: item }),
-        }
-      );
-
-      const data = await res.json();
-      if (data.success) {
-        navigate("/details", { state: data });
-      } else {
-        alert("Something went wrong!");
-      }
-    } catch {
-      alert("Network error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSearchClick = () => {
-    clearTimeout(debounceRef.current);
-    searchCourses(query);
-  };
-
-  const copyUPI = () => {
-    navigator.clipboard.writeText("khakse2gaurav2003@okaxis");
-    alert("UPI copied!");
-  };
-
   return (
-    <>
+    <div className="app-layout">
+      <Header />
+
       {loading && (
-        <div className="loader-overlay">
-          <div className="loader-circle"></div>
-          <p style={{ color: "white", fontWeight: "bold" }}>
-            {loadingMessages[loadingMessageIndex]}
-          </p>
-        </div>
+        <Loader
+          message={LOADING_MESSAGES[loadingMessageIndex]}
+          submessage="Configuring specialization syllabus and background prompts"
+        />
       )}
 
-      <div className="main-content">
-        <div className="header">
-          <div onClick={() => window.location.reload()} className="home-btn">
-            Get-EasyAid
+      <main className="page-wrapper">
+        <section className="search-hero">
+          <div className="search-pill-badge">
+            <Sparkles size={14} />
+            <span>AI-Powered Application Assistant</span>
           </div>
 
-          <div className="header-right">
-            <button
-              className="icon-btn icon-menu"
-              onClick={() => setMenuOpen(!menuOpen)}
-            />
-
-            {menuOpen && (
-              <div className="dropdown-menu active">
-                <a href="https://github.com/VoyagerX21/Get-AidEasy" target="_blank">
-                  Source Code
-                </a>
-                <a
-                  href="https://www.instagram.com/_gaurav.khakse_/"
-                  target="_blank"
-                >
-                  Stalk my insta?
-                </a>
-                <a onClick={() => setModalOpen(true)}>Buy me a coffee ☕️</a>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="chat-container">
-          <h1 className="welcome-message">
-            100% Legit Coursera Financial Aid Answers
-          </h1>
-          <h1 className="welcome-message">
-            <i>Learn smart. Apply smarter</i>
+          <h1 className="search-hero-title">
+            Generate Coursera Financial Aid Answers
           </h1>
 
-          <div className="input-container">
-            <div className="input-wrapper">
+          <p className="search-hero-subtitle">
+            Get 100% compliant, customized 150+ word financial aid application essays tailored to your background in seconds.
+          </p>
+
+          <div className="search-command-container">
+            <div className="search-command-bar">
+              {isSearching ? (
+                <Loader2 size={20} className="search-bar-icon saas-loader-spinner" />
+              ) : (
+                <Search size={20} className="search-bar-icon" />
+              )}
+
               <input
                 ref={inputRef}
-                className="main-input"
-                placeholder="Type course name or university to search…"
+                className="search-bar-input"
+                placeholder="Search course title (e.g., Python for Everybody, Machine Learning)..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onFocus={() => query && setShowDropdown(true)}
+                onFocus={() => query.trim() && results.length > 0 && setShowDropdown(true)}
+                aria-label="Course search input"
               />
 
-              <button style={{ background: "black", borderRadius: "50%", border: "none", cursor: "pointer" }} onClick={handleSearchClick}>
-                <Search size={22} color="white"/>
-              </button>
+              <div className="search-shortcut-badge">Press / to focus</div>
             </div>
 
             {showDropdown && results.length > 0 && (
-              <div className="dropdown show" ref={dropdownRef}>
+              <div className="search-results-dropdown" ref={dropdownRef}>
                 {results.map((item, i) => (
                   <div
                     key={item.FIELD1 || i}
-                    className={`dropdown-item ${
+                    className={`search-result-item ${
                       highlight === i ? "highlighted" : ""
                     }`}
                     onClick={() => select(item)}
+                    role="option"
+                    aria-selected={highlight === i}
                   >
-                    <div className="item-text">{item.title}</div>
-                    <div className="item-category">
-                      {item.Organization}
-                    </div>
+                    <div className="search-result-title">{item.title}</div>
+                    {item.Organization && (
+                      <span className="search-result-org">{item.Organization}</span>
+                    )}
                   </div>
                 ))}
               </div>
             )}
 
-            {showDropdown && hasSearched && results.length === 0 && (
-              <div className="dropdown show" ref={dropdownRef}>
-                <div className="dropdown-item dropdown-item-empty" aria-disabled="true">
-                  No results found
+            {showDropdown && hasSearched && results.length === 0 && !isSearching && (
+              <div className="search-results-dropdown" ref={dropdownRef}>
+                <div className="search-empty-state">
+                  No matching courses found. Try searching with a general keyword.
                 </div>
               </div>
             )}
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* MODAL */}
-      {modalOpen && (
-        <div className="overlay active" onClick={() => setModalOpen(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <button
-              className="close-btn"
-              onClick={() => setModalOpen(false)}
-            >
-              &times;
-            </button>
-            <h2>Buy me a coffee!</h2>
-
-            <div className="modal-content">
-              <div className="upi-section">
-                <div className="upi-id" onClick={copyUPI}>
-                  khakse2gaurav2003@okaxis
-                </div>
-              </div>
+        <section className="feature-grid">
+          <div className="feature-card">
+            <div className="feature-icon-wrapper">
+              <BookOpen size={20} />
             </div>
+            <h3 className="feature-title">Course-Specific Context</h3>
+            <p className="feature-desc">
+              Extracts the exact curriculum and syllabus to craft genuine, relevant learning motivations.
+            </p>
           </div>
-        </div>
-      )}
-    </>
+
+          <div className="feature-card">
+            <div className="feature-icon-wrapper">
+              <CheckCircle2 size={20} />
+            </div>
+            <h3 className="feature-title">Meets 150+ Word Requirement</h3>
+            <p className="feature-desc">
+              Formatted to fulfill Coursera's strict minimum word count criteria for both prompt questions.
+            </p>
+          </div>
+
+          <div className="feature-card">
+            <div className="feature-icon-wrapper">
+              <ShieldCheck size={20} />
+            </div>
+            <h3 className="feature-title">100% Free & Open Source</h3>
+            <p className="feature-desc">
+              Built for students and self-learners worldwide. Fully transparent and privacy-friendly.
+            </p>
+          </div>
+        </section>
+      </main>
+    </div>
   );
 }
